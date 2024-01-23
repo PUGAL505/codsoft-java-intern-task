@@ -1,0 +1,87 @@
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.util.Scanner;
+import org.json.JSONObject;
+
+class CurrencyConverter {
+    private String apiKey;  // Your API key for the currency exchange service
+
+    public CurrencyConverter(String apiKey) {
+        this.apiKey = apiKey;
+    }
+
+    public double getExchangeRate(String baseCurrency, String targetCurrency) throws IOException {
+        String apiUrl = "https://api.exchangerate-api.com/v4/latest/" + baseCurrency;
+
+        URL url = new URL(apiUrl);
+        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+        connection.setRequestMethod("GET");
+
+        BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+        StringBuilder response = new StringBuilder();
+        String line;
+
+        while ((line = reader.readLine()) != null) {
+            response.append(line);
+        }
+        reader.close();
+
+        JSONObject jsonResponse = new JSONObject(response.toString());
+        return jsonResponse.getJSONObject("rates").getDouble(targetCurrency);
+    }
+
+    public double convert(double amount, String baseCurrency, String targetCurrency) throws IOException {
+        double exchangeRate = getExchangeRate(baseCurrency, targetCurrency);
+        return amount * exchangeRate;
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        Scanner scanner = new Scanner(System.in);
+
+        BankAccount userAccount = new BankAccount(1000);
+        ATM atmMachine = new ATM(userAccount);
+        CurrencyConverter currencyConverter = new CurrencyConverter("YOUR_API_KEY");
+
+        while (true) {
+            atmMachine.displayMenu();
+            System.out.print("Enter your choice: ");
+            int choice = scanner.nextInt();
+
+            switch (choice) {
+                case 1:
+                    try {
+                        System.out.print("Base currency: ");
+                        String baseCurrency = scanner.next();
+                        System.out.print("Target currency: ");
+                        String targetCurrency = scanner.next();
+                        System.out.print("Amount in " + baseCurrency + ": ");
+                        double amountToConvert = scanner.nextDouble();
+
+                        double convertedAmount = currencyConverter.convert(amountToConvert, baseCurrency, targetCurrency);
+                        System.out.println("Converted: " + convertedAmount + " " + targetCurrency);
+                    } catch (IOException e) {
+                        System.out.println("Error fetching exchange rates from the API.");
+                    }
+                    break;
+
+                case 2:
+                    // Deposit
+                    break;
+                case 3:
+                    // Check Balance
+                    break;
+                case 4:
+                    System.out.println("Exiting. Thank you!");
+                    System.exit(0);
+                    break;
+                default:
+                    System.out.println("Invalid choice. Please select a valid option.");
+            }
+        }
+    }
+}
